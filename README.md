@@ -7,7 +7,7 @@ Only needs the */proc* pseudo-filesystem to check and gather information about p
 
 Currently written for **Python3**, but shouldn't be difficult to make python2 compatible.
 
-\**If you run process-watcher on MacOS and it works, let me know so I can update the documentation.* 
+\**If you run process-watcher on MacOS and it works, let me know so I can update the documentation.*
 
 **Supported notification methods:**
 
@@ -44,7 +44,7 @@ For example: `ln -s path/to/process-watcher/process_watcher.py /usr/local/bin/pr
 The program just runs until all processes end or forever if *--watch-new* is specified.
 
 In Unix environments you can run a program in the background and disconnect from the terminal like this:
-`nohup process_watcher ARGs &` 
+`nohup process_watcher ARGs &`
 
 ## Examples
 Send an email when process 1234 exits.
@@ -65,14 +65,14 @@ Arguments from **process_watcher --help**
 
 ```
 [+] indicates the argument may be specified multiple times, for example:
- process-watcher -p 1234 -p 4258 -c myapp* -crx "exec\d+" --to person1@domain.com --to person2@someplace.com
+ process-watcher -p 1234 -p 4258 -c myapp* -r "exec\d+" --to person1@domain.com --to person2@someplace.com
 
 optional arguments:
   -h, --help            show this help message and exit
   -p PID, --pid PID     process ID(s) to watch [+]
   -c COMMAND_PATTERN, --command COMMAND_PATTERN
                         watch all processes matching the command name pattern. (shell-style wildcards) [+]
-  -crx COMMAND_REGEX, --command-regex COMMAND_REGEX
+  -r COMMAND_REGEX, --command-regex COMMAND_REGEX
                         watch all processes matching the command name regular expression. [+]
   -w, --watch-new       watch for new processes that match --command. (run forever)
   --to EMAIL_ADDRESS    email address to send to [+]
@@ -97,8 +97,8 @@ Requires **python-dbus**, which is easiest to install with your package manager:
 
 ## Email
 
-Uses Python's built-in email module. However, you will need to setup a local smtp server. 
-[This tutorial](https://easyengine.io/tutorials/linux/ubuntu-postfix-gmail-smtp) shows how to setup Postfix with a GMail relay on Ubuntu. 
+Uses Python's built-in email module. However, you will need to setup a local smtp server.
+[This tutorial](https://easyengine.io/tutorials/linux/ubuntu-postfix-gmail-smtp) shows how to setup Postfix with a GMail relay on Ubuntu.
 
 # Contributions
 
@@ -124,4 +124,4 @@ These are some ideas and known issues I have; if any of these is particularly im
 - Make installable from pip
 - [Pushover](https://pushover.net/) comm protocol
 - IRC
-- Separate communication code into another project after adding a few more protocols to make it more useful to people. Config file for setup and message templates. Investigate other python libs first. 
+- Separate communication code into another project after adding a few more protocols to make it more useful to people. Config file for setup and message templates. Investigate other python libs first.

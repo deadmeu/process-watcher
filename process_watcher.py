@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 
-import sys
 import argparse
-from argparse import RawTextHelpFormatter
 import logging
+import os
+import sys
+from argparse import RawTextHelpFormatter
 
 from process import *
 
@@ -14,7 +15,7 @@ communication protocols.
 (See README.md for help installing dependencies)
 
 [+] indicates the argument may be specified multiple times, for example:
- %(prog)s -p 1234 -p 4258 -c myapp* -crx "exec\d+" --to person1@domain.com --to person2@someplace.com
+ %(prog)s -p 1234 -p 4258 -c myapp* -r "exec\d+" --to person1@domain.com --to person2@someplace.com
 """)
 
 parser.add_argument('-p', '--pid', help='process ID(s) to watch [+]',
@@ -23,20 +24,28 @@ parser.add_argument('-p', '--pid', help='process ID(s) to watch [+]',
 parser.add_argument('-c', '--command',
                     help='watch all processes matching the command name pattern. (shell-style wildcards) [+]',
                     action='append', default=[], metavar='COMMAND_PATTERN')
-parser.add_argument('-crx', '--command-regex',
+parser.add_argument('-r', '--command-regex',
                     help='watch all processes matching the command name regular expression. [+]',
                     action='append', default=[], metavar='COMMAND_REGEX')
+parser.add_argument('-x', '--execute', nargs=2,
+                    help='execute shell code on match',
+                    action='append', default=[], metavar='EXECUTE_CODE')
 parser.add_argument('-w', '--watch-new', help='watch for new processes that match --command. '
                                               '(run forever)', action='store_true')
-parser.add_argument('--to', help='email address to send to [+]', action='append', metavar='EMAIL_ADDRESS')
-parser.add_argument('--channel', help='channel to send to [+]', action='append')
-parser.add_argument('-n', '--notify', help='send DBUS Desktop notification', action='store_true')
+parser.add_argument(
+    '--to', help='email address to send to [+]', action='append', metavar='EMAIL_ADDRESS')
+parser.add_argument(
+    '--channel', help='channel to send to [+]', action='append')
+parser.add_argument(
+    '-n', '--notify', help='send DBUS Desktop notification', action='store_true')
 parser.add_argument('-i', '--interval', help='how often to check on processes. (default: 15.0 seconds)',
                     type=float, default=15.0, metavar='SECONDS')
 parser.add_argument('-q', '--quiet', help="don't print anything to stdout except warnings and errors",
                     action='store_true')
-parser.add_argument('--log', help="log style output (timestamps and log level)", action='store_true')
-parser.add_argument('--tag', help='label for process [+]', action='append', metavar='LABEL')
+parser.add_argument(
+    '--log', help="log style output (timestamps and log level)", action='store_true')
+parser.add_argument(
+    '--tag', help='label for process [+]', action='append', metavar='LABEL')
 
 # Just print help and exit if no arguments specified.
 if len(sys.argv) == 1:
@@ -67,7 +76,8 @@ if args.channel:
         import communicate.slack
         comms.append((communicate.slack, {'channel': args.channel}))
     except:
-        logging.exception('Failed to load slack module. (required by --channel)')
+        logging.exception(
+            'Failed to load slack module. (required by --channel)')
         sys.exit(1)
 
 if args.notify:
@@ -86,6 +96,14 @@ if args.notify:
     except:
         logging.exception(exception_message)
         sys.exit(1)
+
+args.execute = args.execute[0]
+if args.execute:
+    execute_len = len(args.execute)
+    if execute_len >= 1:
+        startup_code = args.execute[0]
+    if execute_len >= 2:
+        shutdown_code = args.execute[1]
 
 
 # dict of all the process watching objects pid -> ProcessByPID
@@ -142,14 +160,22 @@ try:
 
                     for comm, send_args in comms:
                         if args.tag:
-                            template = '{executable} process {pid} ended' + ': {}'.format(args.tag)
+                            template = '{executable} process {pid} ended' + \
+                                ': {}'.format(args.tag)
                         else:
                             template = '{executable} process {pid} ended'
-                        
-                        comm.send(process=process, subject_format=template, **send_args)
+
+                        comm.send(process=process,
+                                  subject_format=template, **send_args)
+
+                    # Execute second element of the args.execute_code
+                    if shutdown_code:
+                        print('Running shutdown code')
+                        os.system(shutdown_code)
 
             except:
-                logging.exception('Exception encountered while checking or communicating about process {}'.format(pid))
+                logging.exception(
+                    'Exception encountered while checking or communicating about process {}'.format(pid))
 
                 if pid not in to_delete:
                     # Exception raised in check(), queue PID to be deleted
@@ -165,10 +191,17 @@ try:
             for pid in process_matcher.matching(new_processes):
                 try:
                     watched_processes[pid] = p = ProcessByPID(pid)
+
                     logging.info('watching new process\n%s', p.info())
 
+                    # Execute first element of the args.execute_code
+                    if startup_code:
+                        print('Running startup code')
+                        os.system(startup_code)
+
                 except:
-                    logging.exception('Exception encountered while attempting to watch new process {}'.format(pid))
+                    logging.exception(
+                        'Exception encountered while attempting to watch new process {}'.format(pid))
 
         elif not watched_processes:
             sys.exit()
